@@ -1,7 +1,14 @@
+"""
+simple autograd engine
+"""
+
 import math
 
 
 class Val:  # scalar
+    """
+    A scalar value with a backpropagation gradient.
+    """
     def __init__(self, val: float, parents=None):
         parents = [] if not parents else parents
         self.value = val
@@ -13,34 +20,45 @@ class Val:  # scalar
 
     def __add__(self: "Val", other: "Val") -> "Val":
         # parent: (parent, gradient)
-        return Val(self.value + other.value, parents=[(self, 1.0),
-                                                      (other, 1.0)])
+        return Val(self.value + other.value, parents=[(self, 1.0), (other, 1.0)])
 
     def __mul__(self: "Val", other: "Val") -> "Val":
-        return Val(self.value * other.value, parents=[(self, other.value),
-                                                      (other, self.value)])
+        return Val(
+            self.value * other.value, parents=[(self, other.value), (other, self.value)]
+        )
 
     def __pow__(self: "Val", power: float):
-        return Val(self.value**power, parents=[(self, power *
-                                                self.value**(power-1))])
+        return Val(
+            self.value**power, parents=[(self, power * self.value ** (power - 1))]
+        )
 
     def __neg__(self: "Val") -> "Val":
-        return Val(-1*self.value)
+        return Val(-1 * self.value)
 
     def __sub__(self: "Val", other: "Val") -> "Val":
         return self + (-other)
 
     def __truediv__(self: "Val", other: "Val") -> "Val":
-        return self * other**(-1)
+        return self * other ** (-1)
 
     def tanh(self: "Val") -> "Val":
-        return Val(math.tanh(self.value),
-                   parents=[(self, 1 - math.tanh(self.value)**2)])
+        """
+        returns the tanh of the value, and the gradient
+        """
+        return Val(
+            math.tanh(self.value), parents=[(self, 1 - math.tanh(self.value) ** 2)]
+        )
 
     def backward(self):
+        """
+        Initiate backpropagation by backpropagating a gradient of 1.0
+        """
         self.backprop(1.0)
 
     def backprop(self, gradient: float):
+        """
+        Backpropagate gradients through the graph.
+        """
         self.grad += gradient
         if not self.parents:
             return
@@ -53,9 +71,7 @@ if __name__ == "__main__":
     b = Val(5.0)
     x = Val(1.0)
 
-    exp1 = (
-        a * x ** 2 + b * x + Val(9)
-    )  # 3x^2 + 5x + 9; let x = 1
+    exp1 = a * x**2 + b * x + Val(9)  # 3x^2 + 5x + 9; let x = 1
     exp1.backward()
 
     for v in [x, exp1]:
